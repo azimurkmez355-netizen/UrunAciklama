@@ -313,24 +313,30 @@ Soru metni burada biter mi?
       }
 
       if(current.isFaq){
-        // FAQ lines vary: "Soru?" on its own line followed by an indented
-        // "* Cevap" line, OR "Soru? Cevap" combined on a single (bulleted
-        // or bare) line. Splitting on the first "?" in the line's content
-        // handles both — a line with no "?" is either a continuation of
-        // the previous answer, or (after a blank line) the start of
-        // trailing, un-headed closing text.
+        // FAQ lines vary a lot: "Soru?" alone followed by an indented
+        // "* Cevap" line (sometimes with a blank line between them, so a
+        // blank line alone can't mean "section over"), OR "Soru? Cevap"
+        // combined on one (bulleted or bare) line. Splitting on the first
+        // "?" in the line's content handles the combined form. A bullet
+        // marker on a line with no "?" is treated as an answer/continuation
+        // for the previous question regardless of a preceding blank line —
+        // real trailing text (Ustapazar.com Avantajı, Resmi Satış Kanalı, …)
+        // is never bulleted in practice, so that's a safe signal.
         var qIdx = content.indexOf('?');
         if(qIdx !== -1){
           var question = content.slice(0, qIdx+1).trim();
           var answerStart = content.slice(qIdx+1).trim();
           current.items.push({ question: question, answer: answerStart });
-        } else if(prevBlank || current.items.length === 0){
+        } else if(bulletMatch && current.items.length > 0){
+          var lastB = current.items[current.items.length-1];
+          lastB.answer = (lastB.answer ? lastB.answer+' ' : '') + content;
+        } else if(!bulletMatch && !prevBlank && current.items.length > 0){
+          var lastP = current.items[current.items.length-1];
+          lastP.answer = (lastP.answer ? lastP.answer+' ' : '') + content;
+        } else {
           sections.push(current);
           current = null;
-          outro.push(trimmed);
-        } else {
-          var last = current.items[current.items.length-1];
-          last.answer = (last.answer ? last.answer+' ' : '') + content;
+          outro.push(content);
         }
         prevBlank = false;
         continue;
