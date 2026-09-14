@@ -4,75 +4,148 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Entegra Açıklama Dönüştürücü</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f4f6f8; --panel:#ffffff; --text:#1c2430; --muted:#6b7684;
-    --border:#dde2e8; --accent:#176194; --accent-dark:#124d76;
-    --danger:#c0392b; --ok:#1e8e3e; --mono:'Consolas','Courier New',monospace;
+    --bg:#F6F3EE; --panel:#FFFFFF; --panel-manuscript:#FBF8F2;
+    --text:#1E2126; --muted:#6B7280;
+    --border:#E4DFD3; --border-strong:#CFC7B6;
+    --accent:#176194; --accent-dark:#0F4A73; --accent-soft:#E7F0F6;
+    --rust:#B85C2A; --rust-soft:rgba(184,92,42,.12);
+    --success:#3F7D5C; --success-soft:rgba(63,125,92,.12);
+    --rule-line:rgba(23,97,148,.09);
+    --font-display:'Archivo',system-ui,sans-serif;
+    --font-body:'Inter',system-ui,-apple-system,sans-serif;
+    --font-mono:'IBM Plex Mono','Consolas',monospace;
+    --shadow-proof:0 1px 2px rgba(30,33,38,.04), 0 8px 24px rgba(30,33,38,.08);
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#14181d; --panel:#1c2229; --text:#e6e9ec; --muted:#93a0ac;
-      --border:#2c343d; --accent:#3a92c9; --accent-dark:#2a75a3;
+      --bg:#14181D; --panel:#1B2028; --panel-manuscript:#171B21;
+      --text:#E7E9EC; --muted:#8B94A0;
+      --border:#2A313B; --border-strong:#394251;
+      --accent:#4C9BCB; --accent-dark:#79C1EE; --accent-soft:rgba(76,155,203,.14);
+      --rust:#E08A52; --rust-soft:rgba(224,138,82,.14);
+      --success:#5FAE85; --success-soft:rgba(95,174,133,.14);
+      --rule-line:rgba(76,155,203,.10);
+      --shadow-proof:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
     }
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
-  header{padding:20px 24px;border-bottom:1px solid var(--border);background:var(--panel);}
-  header h1{margin:0;font-size:18px;}
-  header p{margin:4px 0 0;color:var(--muted);font-size:13px;}
-  main{max-width:1200px;margin:0 auto;padding:20px 24px;}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
-  @media (max-width:860px){.grid{grid-template-columns:1fr;}}
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
-  .panel h2{margin:0 0 12px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
-  label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px;}
-  input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:14px;}
-  textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;resize:vertical;}
-  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
-  button{cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;}
+  html{-webkit-text-size-adjust:100%;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.5;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px;}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important;}
+  }
+
+  .eyebrow{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);display:flex;align-items:center;gap:8px;margin:0 0 14px;}
+  .step-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--font-mono);font-size:11px;flex-shrink:0;}
+
+  /* ---------- Topbar ---------- */
+  .topbar{display:flex;gap:16px;align-items:flex-start;padding:26px 24px;border-bottom:1px solid var(--border);background:var(--panel);}
+  .mark{flex-shrink:0;width:44px;height:44px;border-radius:10px;background:linear-gradient(155deg,var(--accent),var(--accent-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:15px;letter-spacing:-.02em;box-shadow:var(--shadow-proof);}
+  .topbar-text .eyebrow{margin-bottom:6px;}
+  .topbar-text h1{margin:0;font-family:var(--font-display);font-weight:800;font-size:21px;letter-spacing:-.01em;}
+  .topbar-text .lede{margin:6px 0 0;color:var(--muted);font-size:13.5px;max-width:62ch;}
+
+  main{max-width:1220px;margin:0 auto;padding:24px;}
+
+  /* ---------- Pipeline layout ---------- */
+  .pipeline{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:start;}
+  .pipeline-arrow{align-self:center;color:var(--border-strong);font-size:20px;font-family:var(--font-mono);}
+  @media (max-width:900px){
+    .pipeline{grid-template-columns:1fr;}
+    .pipeline-arrow{display:none;}
+  }
+
+  .panel{background:var(--panel);border:1px solid var(--border-strong);border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(30,33,38,.04);}
+
+  .manuscript{background:var(--panel-manuscript);}
+  label{display:block;font-size:12.5px;font-weight:600;margin:14px 0 6px;color:var(--text);}
+  label:first-of-type{margin-top:0;}
+  input[type=text]{width:100%;padding:9px 11px;border:1px solid var(--border-strong);border-radius:7px;background:var(--panel);color:var(--text);font-size:14px;font-family:var(--font-mono);transition:border-color .15s;}
+  input[type=text]:focus{border-color:var(--accent);}
+  textarea{width:100%;padding:10px 12px;border:1px solid var(--border-strong);border-radius:7px;background:var(--panel);color:var(--text);font-family:var(--font-mono);font-size:13px;line-height:26px;resize:vertical;transition:border-color .15s;
+    background-image:repeating-linear-gradient(to bottom, transparent, transparent 25px, var(--rule-line) 26px);
+    background-attachment:local;}
+  textarea:focus{border-color:var(--accent);}
+
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  button{cursor:pointer;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border-strong);background:var(--panel);color:var(--text);padding:8px 14px;border-radius:7px;font-size:13px;font-weight:600;font-family:var(--font-body);transition:background .15s,border-color .15s,color .15s,transform .1s;}
+  button svg{width:14px;height:14px;flex-shrink:0;}
+  button:hover{border-color:var(--accent);color:var(--accent-dark);}
+  button:active{transform:translateY(1px);}
   button.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
-  button.primary:hover{background:var(--accent-dark);}
-  button.danger{color:var(--danger);}
-  button:hover{filter:brightness(0.97);}
+  button.primary:hover{background:var(--accent-dark);border-color:var(--accent-dark);color:#fff;}
+  button.danger{color:var(--rust);}
+  button.danger:hover{border-color:var(--rust);color:var(--rust);}
   button:disabled{opacity:.5;cursor:not-allowed;}
-  #previewFrame{border:1px solid var(--border);border-radius:6px;padding:12px;max-height:520px;overflow:auto;background:#fff;color:#1c2430;}
+  button.ghost{border-color:transparent;background:transparent;padding:4px 8px;font-size:12px;}
+  button.ghost:hover{background:var(--accent-soft);}
+
+  details{margin-top:16px;border:1px solid var(--border);border-radius:9px;padding:2px 16px;background:var(--panel);}
+  details summary{cursor:pointer;font-weight:600;font-size:13px;padding:10px 0;}
+  details[open] summary{border-bottom:1px solid var(--border);}
+  details ul{margin:10px 0 12px;padding-left:20px;font-size:13px;color:var(--muted);line-height:1.7;}
+  details code{font-family:var(--font-mono);background:var(--accent-soft);color:var(--accent-dark);padding:1px 5px;border-radius:4px;font-size:12px;}
+
+  /* ---------- Proof panel ---------- */
+  .proof{border-top:4px solid var(--accent);box-shadow:var(--shadow-proof);}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;min-height:0;}
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:600;}
+  .chip-ok{background:var(--success-soft);color:var(--success);}
+  .chip-warn{background:var(--rust-soft);color:var(--rust);}
+  .chip svg{width:11px;height:11px;}
+
+  #previewFrame{background:#fff;color:#1c2430;border-radius:8px;border:1px solid var(--border);padding:18px;max-height:480px;overflow:auto;font-size:14px;line-height:1.55;}
   #previewFrame h3{margin-top:0;}
+  #previewFrame ul{padding-left:22px;}
   .empty-hint{color:var(--muted);font-size:13px;}
-  .help{margin-top:16px;}
-  details{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;}
-  details summary{cursor:pointer;font-weight:600;font-size:13px;}
-  details ul{margin:10px 0 0;padding-left:20px;font-size:13px;color:var(--muted);line-height:1.6;}
-  .products{margin-top:20px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
-  .products h2{margin:0 0 4px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
-  .table-wrap{overflow-x:auto;margin-top:10px;}
+  #previewFrame .empty-hint{padding:30px 4px;text-align:center;}
+
+  /* ---------- Batch / products ---------- */
+  .products{margin-top:18px;}
+  .products-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px;}
+  .products-count{font-family:var(--font-mono);font-size:12px;color:var(--muted);}
+  .table-wrap{overflow-x:auto;margin-top:8px;border:1px solid var(--border);border-radius:9px;}
   table{width:100%;border-collapse:collapse;font-size:13px;}
-  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
-  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;}
-  td.mono{font-family:var(--mono);}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  thead th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;background:var(--panel-manuscript);}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--accent-soft);}
+  .code-badge{font-family:var(--font-mono);background:var(--accent-soft);color:var(--accent-dark);padding:2px 8px;border-radius:5px;font-size:12.5px;}
   .row-actions{display:flex;gap:6px;}
-  .row-actions button{padding:4px 8px;font-size:12px;}
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent-dark);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;}
-  .toast.show{opacity:1;}
+  .empty-state{border:1px dashed var(--border-strong);border-radius:9px;padding:28px 16px;text-align:center;color:var(--muted);font-size:13px;margin-top:8px;}
   .footer-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--accent-dark);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-family:var(--font-mono);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;display:flex;align-items:center;gap:8px;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Entegra Açıklama Dönüştürücü</h1>
-  <p>AI'dan aldığınız ham metni Entegra'nın HTML biçimine (mavi başlık kutuları + madde işaretleri) çevirir. Ürünleri listeye ekleyip toplu Excel olarak da indirebilirsiniz.</p>
+<header class="topbar">
+  <div class="mark" aria-hidden="true">EA</div>
+  <div class="topbar-text">
+    <p class="eyebrow">İşlem Hattı</p>
+    <h1>Entegra Açıklama Dönüştürücü</h1>
+    <p class="lede">AI'dan aldığınız ham metni Entegra'nın HTML biçimine çevirir, ürünleri partiye ekler, toplu Excel olarak dışa aktarır.</p>
+  </div>
 </header>
 
 <main>
-  <div class="grid">
-    <section class="panel">
-      <h2>Girdi</h2>
+  <div class="pipeline">
+    <section class="panel manuscript">
+      <p class="eyebrow"><span class="step-num">1</span> Ham Metin</p>
+
       <label for="urunKodu">Ürün Kodu</label>
       <input type="text" id="urunKodu" placeholder="0611265100">
 
-      <label for="rawText">Ham Açıklama Metni</label>
-      <textarea id="rawText" rows="18" placeholder="Kullanıcı Avantajları
+      <label for="rawText">AI Çıktısı</label>
+      <textarea id="rawText" rows="17" placeholder="Kullanıcı Avantajları
 
 * 1500 Watt motor ve 12,5 Jul tekil darbe enerjisi ile en sert betonlarda...
 * ...
@@ -88,35 +161,44 @@ Soru metni burada biter mi?
    * Cevap metni burada başlar."></textarea>
 
       <div class="actions">
-        <button class="primary" id="btnCopyHtml">Kaynak Kodunu Kopyala</button>
-        <button id="btnAdd">Listeye Ekle</button>
+        <button class="primary" id="btnCopyHtml">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3.2 10.5h-.7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v.7" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+          Kaynak Kodunu Kopyala
+        </button>
+        <button id="btnAdd">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Listeye Ekle
+        </button>
         <button id="btnClearForm">Formu Temizle</button>
       </div>
 
-      <div class="help">
-        <details>
-          <summary>Format nasıl olmalı?</summary>
-          <ul>
-            <li>Her bölüm başlığı ("Kullanıcı Avantajları", "Teknik Özellikler", "Paket İçeriği", "... Nerelerde Kullanılır?", "Sıkça Sorulan Sorular (SSS)") kendi satırında, altında boş satır olsun.</li>
-            <li>Madde satırları <code>*</code> veya <code>-</code> ile başlamalı.</li>
-            <li>Teknik Özellikler'de <code>Etiket: Değer</code> biçimindeki satırlarda etiket otomatik kalın yapılır.</li>
-            <li>Kalın gösterilmesini istediğiniz herhangi bir ifadeyi <code>**bu şekilde**</code> çift yıldızla işaretleyin — AI'nızdan çıktı isterken bunu prompt'a ekleyin, önemli ifadeleri otomatik kalın hale getirir.</li>
-            <li>SSS bölümünde soru satırı <code>?</code> ile bitmeli, cevap satırı ise başında boşluk + <code>*</code> ile girintili olmalı.</li>
-            <li>Son satırda başlıksız bir kapanış/pazarlama cümlesi varsa (örn. "Ustapazar.com Avantajı: ...") otomatik olarak sona düz paragraf şeklinde eklenir.</li>
-          </ul>
-        </details>
-      </div>
+      <details>
+        <summary>Format nasıl olmalı?</summary>
+        <ul>
+          <li>Her bölüm başlığı ("Kullanıcı Avantajları", "Teknik Özellikler", "Paket İçeriği", "... Nerelerde Kullanılır?", "Sıkça Sorulan Sorular (SSS)") kendi satırında, altında boş satır olsun.</li>
+          <li>Madde satırları <code>*</code> veya <code>-</code> ile başlamalı.</li>
+          <li>Teknik Özellikler'de <code>Etiket: Değer</code> biçimindeki satırlarda etiket otomatik kalın yapılır.</li>
+          <li>Kalın gösterilmesini istediğiniz herhangi bir ifadeyi <code>**bu şekilde**</code> çift yıldızla işaretleyin.</li>
+          <li>SSS bölümünde soru satırı <code>?</code> ile bitmeli, cevap satırı ise başında boşluk + <code>*</code> ile girintili olmalı.</li>
+        </ul>
+      </details>
     </section>
 
-    <section class="panel">
-      <h2>Önizleme</h2>
-      <div id="previewFrame"><p class="empty-hint">Metni sol tarafa yapıştırınca burada canlı önizleme görünecek.</p></div>
+    <div class="pipeline-arrow" aria-hidden="true">→</div>
+
+    <section class="panel proof">
+      <p class="eyebrow"><span class="step-num">2</span> Önizleme &amp; Kontrol</p>
+      <div class="chips" id="sectionChips" hidden></div>
+      <div id="previewFrame"><p class="empty-hint">Metni sol tarafa yapıştırınca burada canlı önizleme ve algılanan bölümler görünecek.</p></div>
     </section>
   </div>
 
-  <section class="products">
-    <h2>Ürün Listesi</h2>
-    <p class="empty-hint" id="productsHint">Henüz eklenen ürün yok.</p>
+  <section class="panel products">
+    <p class="eyebrow"><span class="step-num">3</span> Liste &amp; Dışa Aktarım</p>
+    <div class="products-head">
+      <span class="products-count" id="productsCount">0 ürün listede</span>
+    </div>
+    <p class="empty-state" id="productsHint">Henüz eklenen ürün yok. Soldaki formdan "Listeye Ekle" ile başlayın.</p>
     <div class="table-wrap">
       <table id="productsTable" style="display:none">
         <thead>
@@ -126,8 +208,14 @@ Soru metni burada biter mi?
       </table>
     </div>
     <div class="footer-actions">
-      <button class="primary" id="btnExportExcel">Excel Olarak İndir (.xlsx)</button>
-      <button class="danger" id="btnClearAll">Tümünü Temizle</button>
+      <button class="primary" id="btnExportExcel">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0-3-3m3 3 3-3M3 12v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Excel Olarak İndir (.xlsx)
+      </button>
+      <button class="danger" id="btnClearAll">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1.5M4.5 4.5l.5 8.5a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1l.5-8.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Tümünü Temizle
+      </button>
     </div>
   </section>
 </main>
@@ -270,16 +358,23 @@ Soru metni burada biter mi?
 
   // ---------- App wiring ----------
 
+  var ICON_CHECK = '<svg viewBox="0 0 16 16"><path d="M2.5 8.2l3.6 3.6 7.4-7.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var ICON_WARN = '<svg viewBox="0 0 16 16"><path d="M8 1.6 15 14H1L8 1.6z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 6.5v3.2M8 11.7h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+  var ICON_COPY_SM = '<svg viewBox="0 0 16 16"><rect x="5" y="5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M3.2 10.5h-.7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1v.7" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>';
+  var ICON_TRASH_SM = '<svg viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1.5M4.5 4.5l.5 8.5a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1l.5-8.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
   var els = {
     urunKodu: document.getElementById('urunKodu'),
     rawText: document.getElementById('rawText'),
     previewFrame: document.getElementById('previewFrame'),
+    sectionChips: document.getElementById('sectionChips'),
     btnCopyHtml: document.getElementById('btnCopyHtml'),
     btnAdd: document.getElementById('btnAdd'),
     btnClearForm: document.getElementById('btnClearForm'),
     productsHint: document.getElementById('productsHint'),
     productsTable: document.getElementById('productsTable'),
     productsBody: document.getElementById('productsBody'),
+    productsCount: document.getElementById('productsCount'),
     btnExportExcel: document.getElementById('btnExportExcel'),
     btnClearAll: document.getElementById('btnClearAll'),
     toast: document.getElementById('toast')
@@ -304,18 +399,35 @@ Soru metni burada biter mi?
     setTimeout(function(){ els.toast.classList.remove('show'); }, 1800);
   }
 
-  function currentHtml(){
-    var parsed = parseDescription(els.rawText.value);
-    return renderHtml(parsed);
+  function currentParsed(){
+    return parseDescription(els.rawText.value);
+  }
+
+  function renderSectionChips(parsed){
+    var raw = els.rawText.value.trim();
+    if(!raw){ els.sectionChips.hidden = true; els.sectionChips.innerHTML=''; return; }
+    els.sectionChips.hidden = false;
+    var chips = parsed.sections.map(function(s){
+      return '<span class="chip chip-ok">'+ICON_CHECK+escapeHtml(s.title)+'</span>';
+    }).join('');
+    var unclassified = parsed.intro.length + parsed.outro.length;
+    if(parsed.sections.length === 0){
+      chips += '<span class="chip chip-warn">'+ICON_WARN+'Hiçbir bölüm başlığı tanınmadı</span>';
+    } else if(unclassified > 0){
+      chips += '<span class="chip chip-warn">'+ICON_WARN+unclassified+' satır başlıksız metin olarak eklendi</span>';
+    }
+    els.sectionChips.innerHTML = chips;
   }
 
   function updatePreview(){
     var raw = els.rawText.value.trim();
+    var parsed = currentParsed();
     if(!raw){
-      els.previewFrame.innerHTML = '<p class="empty-hint">Metni sol tarafa yapıştırınca burada canlı önizleme görünecek.</p>';
-      return;
+      els.previewFrame.innerHTML = '<p class="empty-hint">Metni sol tarafa yapıştırınca burada canlı önizleme ve algılanan bölümler görünecek.</p>';
+    } else {
+      els.previewFrame.innerHTML = renderHtml(parsed);
     }
-    els.previewFrame.innerHTML = currentHtml();
+    renderSectionChips(parsed);
   }
 
   function copyToClipboard(text){
@@ -340,10 +452,10 @@ Soru metni burada biter mi?
   }
 
   function renderProductsTable(){
+    els.productsCount.textContent = products.length + (products.length === 1 ? ' ürün listede' : ' ürün listede');
     if(products.length === 0){
       els.productsHint.style.display = '';
       els.productsTable.style.display = 'none';
-      els.productsHint.textContent = 'Henüz eklenen ürün yok.';
       return;
     }
     els.productsHint.style.display = 'none';
@@ -353,11 +465,11 @@ Soru metni burada biter mi?
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td>'+(idx+1)+'</td>'+
-        '<td class="mono">'+escapeHtml(p.kod || '(kodsuz)')+'</td>'+
+        '<td><span class="code-badge">'+escapeHtml(p.kod || '(kodsuz)')+'</span></td>'+
         '<td>'+p.html.length+'</td>'+
         '<td class="row-actions">'+
-          '<button data-action="copy" data-idx="'+idx+'">HTML Kopyala</button>'+
-          '<button data-action="delete" data-idx="'+idx+'" class="danger">Sil</button>'+
+          '<button class="ghost" data-action="copy" data-idx="'+idx+'">'+ICON_COPY_SM+' HTML</button>'+
+          '<button class="ghost danger" data-action="delete" data-idx="'+idx+'">'+ICON_TRASH_SM+' Sil</button>'+
         '</td>';
       els.productsBody.appendChild(tr);
     });
@@ -368,14 +480,14 @@ Soru metni burada biter mi?
   els.btnCopyHtml.addEventListener('click', function(){
     var raw = els.rawText.value.trim();
     if(!raw){ showToast('Önce metin yapıştırın'); return; }
-    copyToClipboard(currentHtml());
+    copyToClipboard(renderHtml(currentParsed()));
   });
 
   els.btnAdd.addEventListener('click', function(){
     var raw = els.rawText.value.trim();
     if(!raw){ showToast('Önce metin yapıştırın'); return; }
     var kod = els.urunKodu.value.trim();
-    products.push({ kod: kod, html: currentHtml() });
+    products.push({ kod: kod, html: renderHtml(currentParsed()) });
     saveProducts();
     renderProductsTable();
     showToast('Listeye eklendi ('+products.length+' ürün)');
