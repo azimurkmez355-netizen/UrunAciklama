@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entegra Açıklama Dönüştürücü</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --panel:#ffffff; --text:#1c2430; --muted:#6b7684;
+    --border:#dde2e8; --accent:#176194; --accent-dark:#124d76;
+    --danger:#c0392b; --ok:#1e8e3e; --mono:'Consolas','Courier New',monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14181d; --panel:#1c2229; --text:#e6e9ec; --muted:#93a0ac;
+      --border:#2c343d; --accent:#3a92c9; --accent-dark:#2a75a3;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+  header{padding:20px 24px;border-bottom:1px solid var(--border);background:var(--panel);}
+  header h1{margin:0;font-size:18px;}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px;}
+  main{max-width:1200px;margin:0 auto;padding:20px 24px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  @media (max-width:860px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .panel h2{margin:0 0 12px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px;}
+  input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:14px;}
+  textarea{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;resize:vertical;}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  button{cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  button.primary:hover{background:var(--accent-dark);}
+  button.danger{color:var(--danger);}
+  button:hover{filter:brightness(0.97);}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  #previewFrame{border:1px solid var(--border);border-radius:6px;padding:12px;max-height:520px;overflow:auto;background:#fff;color:#1c2430;}
+  #previewFrame h3{margin-top:0;}
+  .empty-hint{color:var(--muted);font-size:13px;}
+  .help{margin-top:16px;}
+  details{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 16px;}
+  details summary{cursor:pointer;font-weight:600;font-size:13px;}
+  details ul{margin:10px 0 0;padding-left:20px;font-size:13px;color:var(--muted);line-height:1.6;}
+  .products{margin-top:20px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .products h2{margin:0 0 4px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  .table-wrap{overflow-x:auto;margin-top:10px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;}
+  td.mono{font-family:var(--mono);}
+  .row-actions{display:flex;gap:6px;}
+  .row-actions button{padding:4px 8px;font-size:12px;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent-dark);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .toast.show{opacity:1;}
+  .footer-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Entegra Açıklama Dönüştürücü</h1>
+  <p>AI'dan aldığınız ham metni Entegra'nın HTML biçimine (mavi başlık kutuları + madde işaretleri) çevirir. Ürünleri listeye ekleyip toplu Excel olarak da indirebilirsiniz.</p>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="panel">
+      <h2>Girdi</h2>
+      <label for="urunKodu">Ürün Kodu</label>
+      <input type="text" id="urunKodu" placeholder="0611265100">
+
+      <label for="rawText">Ham Açıklama Metni</label>
+      <textarea id="rawText" rows="18" placeholder="Kullanıcı Avantajları
+
+* 1500 Watt motor ve 12,5 Jul tekil darbe enerjisi ile en sert betonlarda...
+* ...
+
+Teknik Özellikler
+
+* Giriş gücü: 1.500 W
+* ...
+
+Sıkça Sorulan Sorular (SSS)
+
+Soru metni burada biter mi?
+   * Cevap metni burada başlar."></textarea>
+
+      <div class="actions">
+        <button class="primary" id="btnCopyHtml">Kaynak Kodunu Kopyala</button>
+        <button id="btnAdd">Listeye Ekle</button>
+        <button id="btnClearForm">Formu Temizle</button>
+      </div>
+
+      <div class="help">
+        <details>
+          <summary>Format nasıl olmalı?</summary>
+          <ul>
+            <li>Her bölüm başlığı ("Kullanıcı Avantajları", "Teknik Özellikler", "Paket İçeriği", "... Nerelerde Kullanılır?", "Sıkça Sorulan Sorular (SSS)") kendi satırında, altında boş satır olsun.</li>
+            <li>Madde satırları <code>*</code> veya <code>-</code> ile başlamalı.</li>
+            <li>Teknik Özellikler'de <code>Etiket: Değer</code> biçimindeki satırlarda etiket otomatik kalın yapılır.</li>
+            <li>Kalın gösterilmesini istediğiniz herhangi bir ifadeyi <code>**bu şekilde**</code> çift yıldızla işaretleyin — AI'nızdan çıktı isterken bunu prompt'a ekleyin, önemli ifadeleri otomatik kalın hale getirir.</li>
+            <li>SSS bölümünde soru satırı <code>?</code> ile bitmeli, cevap satırı ise başında boşluk + <code>*</code> ile girintili olmalı.</li>
+            <li>Son satırda başlıksız bir kapanış/pazarlama cümlesi varsa (örn. "Ustapazar.com Avantajı: ...") otomatik olarak sona düz paragraf şeklinde eklenir.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Önizleme</h2>
+      <div id="previewFrame"><p class="empty-hint">Metni sol tarafa yapıştırınca burada canlı önizleme görünecek.</p></div>
+    </section>
+  </div>
+
+  <section class="products">
+    <h2>Ürün Listesi</h2>
+    <p class="empty-hint" id="productsHint">Henüz eklenen ürün yok.</p>
+    <div class="table-wrap">
+      <table id="productsTable" style="display:none">
+        <thead>
+          <tr><th>#</th><th>Ürün Kodu</th><th>Karakter (HTML)</th><th>İşlemler</th></tr>
+        </thead>
+        <tbody id="productsBody"></tbody>
+      </table>
+    </div>
+    <div class="footer-actions">
+      <button class="primary" id="btnExportExcel">Excel Olarak İndir (.xlsx)</button>
+      <button class="danger" id="btnClearAll">Tümünü Temizle</button>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var HEADER_STYLE = 'FONT-SIZE: 20px; BACKGROUND: #176194; FONT-WEIGHT: bold; COLOR: #fff; PADDING-BOTTOM: 15px; PADDING-TOP: 15px; PADDING-LEFT: 15px; MARGIN: 0px 0px 20px; PADDING-RIGHT: 15px';
+
+  // Turkish-aware lowercasing: JS's default /i regex flag does NOT fold
+  // dotted capital İ (U+0130) to "i", so plain /pattern/i misses headers
+  // like "Paket İçeriği". Normalize Turkish casing before matching instead.
+  function trLower(str){
+    return String(str).replace(/İ/g,'i').replace(/I/g,'ı').toLowerCase();
+  }
+
+  var HEADER_PATTERNS = [
+    /kullanıcı avantajları/,
+    /teknik özellikler/,
+    /paket içeriği/,
+    /nerelerde kullanılır/,
+    /sıkça sorulan sorular/,
+    /^sss$/
+  ];
+
+  function isHeaderLine(line){
+    var l = trLower(line);
+    return HEADER_PATTERNS.some(function(re){ return re.test(l); });
+  }
+  function isFaqHeader(line){
+    var l = trLower(line);
+    return /sıkça sorulan sorular/.test(l) || /^sss$/.test(l.trim());
+  }
+  function isTechHeader(title){
+    return /teknik özellikler/.test(trLower(title));
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function formatInline(text){
+    var parts = String(text).split(/(\*\*[^*]+\*\*)/g);
+    return parts.map(function(p){
+      if(/^\*\*[^*]+\*\*$/.test(p)) return '<b>'+escapeHtml(p.slice(2,-2))+'</b>';
+      return escapeHtml(p);
+    }).join('');
+  }
+
+  function formatTechLine(text){
+    if(/\*\*/.test(text)) return formatInline(text);
+    var m = text.match(/^([^:]{2,60}):\s*(.+)$/);
+    if(m) return '<b>'+escapeHtml(m[1])+':</b> '+formatInline(m[2]);
+    return formatInline(text);
+  }
+
+  function parseDescription(raw){
+    var lines = raw.replace(/\r\n/g,'\n').split('\n');
+    var sections = [];
+    var current = null;
+    var intro = [];
+    var outro = [];
+
+    for(var i=0;i<lines.length;i++){
+      var line = lines[i].replace(/\s+$/,'');
+      var trimmed = line.trim();
+      if(trimmed === '') continue;
+
+      var bulletMatch = line.match(/^(\s*)[\*\-]\s+(.*)$/);
+
+      if(!bulletMatch && isHeaderLine(trimmed)){
+        if(current) sections.push(current);
+        current = { title: trimmed, isFaq: isFaqHeader(trimmed), items: [] };
+        continue;
+      }
+
+      if(current === null){
+        intro.push(bulletMatch ? bulletMatch[2] : trimmed);
+        continue;
+      }
+
+      if(current.isFaq){
+        if(bulletMatch){
+          var answerText = bulletMatch[2];
+          var last = current.items[current.items.length-1];
+          if(last){ last.answer = (last.answer ? last.answer+' ' : '') + answerText; }
+          else { current.items.push({question:'', answer:answerText}); }
+        } else if(trimmed.slice(-1) === '?'){
+          current.items.push({question: trimmed, answer:''});
+        } else {
+          sections.push(current);
+          current = null;
+          outro.push(trimmed);
+        }
+        continue;
+      }
+
+      if(bulletMatch){
+        current.items.push({text: bulletMatch[2]});
+      } else {
+        sections.push(current);
+        current = null;
+        outro.push(trimmed);
+      }
+    }
+    if(current) sections.push(current);
+
+    return { intro: intro, sections: sections, outro: outro };
+  }
+
+  function renderHtml(parsed){
+    var html = '';
+    parsed.intro.forEach(function(t){ html += '<p>'+formatInline(t)+'</p>\n'; });
+
+    parsed.sections.forEach(function(sec){
+      html += '<h3 style="'+HEADER_STYLE+'">'+escapeHtml(sec.title)+'</h3>\n';
+      if(sec.isFaq){
+        sec.items.forEach(function(it){
+          html += '<p><b>'+formatInline(it.question)+'</b></p>\n';
+          html += '<p>'+formatInline(it.answer)+'</p>\n';
+        });
+      } else {
+        var tech = isTechHeader(sec.title);
+        html += '<ul>\n';
+        sec.items.forEach(function(it){
+          var content = tech ? formatTechLine(it.text) : formatInline(it.text);
+          html += '<li><p>'+content+'</p></li>\n';
+        });
+        html += '</ul>\n';
+      }
+    });
+
+    parsed.outro.forEach(function(t){ html += '<p>'+formatInline(t)+'</p>\n'; });
+    return html;
+  }
+
+  // ---------- App wiring ----------
+
+  var els = {
+    urunKodu: document.getElementById('urunKodu'),
+    rawText: document.getElementById('rawText'),
+    previewFrame: document.getElementById('previewFrame'),
+    btnCopyHtml: document.getElementById('btnCopyHtml'),
+    btnAdd: document.getElementById('btnAdd'),
+    btnClearForm: document.getElementById('btnClearForm'),
+    productsHint: document.getElementById('productsHint'),
+    productsTable: document.getElementById('productsTable'),
+    productsBody: document.getElementById('productsBody'),
+    btnExportExcel: document.getElementById('btnExportExcel'),
+    btnClearAll: document.getElementById('btnClearAll'),
+    toast: document.getElementById('toast')
+  };
+
+  var STORAGE_KEY = 'entegra_urun_listesi_v1';
+  var products = [];
+
+  function loadProducts(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      products = raw ? JSON.parse(raw) : [];
+    }catch(e){ products = []; }
+  }
+  function saveProducts(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(products)); }catch(e){}
+  }
+
+  function showToast(msg){
+    els.toast.textContent = msg;
+    els.toast.classList.add('show');
+    setTimeout(function(){ els.toast.classList.remove('show'); }, 1800);
+  }
+
+  function currentHtml(){
+    var parsed = parseDescription(els.rawText.value);
+    return renderHtml(parsed);
+  }
+
+  function updatePreview(){
+    var raw = els.rawText.value.trim();
+    if(!raw){
+      els.previewFrame.innerHTML = '<p class="empty-hint">Metni sol tarafa yapıştırınca burada canlı önizleme görünecek.</p>';
+      return;
+    }
+    els.previewFrame.innerHTML = currentHtml();
+  }
+
+  function copyToClipboard(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showToast('Kaynak kodu kopyalandı');
+      }).catch(function(){ legacyCopy(text); });
+    } else {
+      legacyCopy(text);
+    }
+  }
+  function legacyCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); showToast('Kaynak kodu kopyalandı'); }
+    catch(e){ showToast('Kopyalanamadı, manuel seçip kopyalayın'); }
+    document.body.removeChild(ta);
+  }
+
+  function renderProductsTable(){
+    if(products.length === 0){
+      els.productsHint.style.display = '';
+      els.productsTable.style.display = 'none';
+      els.productsHint.textContent = 'Henüz eklenen ürün yok.';
+      return;
+    }
+    els.productsHint.style.display = 'none';
+    els.productsTable.style.display = '';
+    els.productsBody.innerHTML = '';
+    products.forEach(function(p, idx){
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+(idx+1)+'</td>'+
+        '<td class="mono">'+escapeHtml(p.kod || '(kodsuz)')+'</td>'+
+        '<td>'+p.html.length+'</td>'+
+        '<td class="row-actions">'+
+          '<button data-action="copy" data-idx="'+idx+'">HTML Kopyala</button>'+
+          '<button data-action="delete" data-idx="'+idx+'" class="danger">Sil</button>'+
+        '</td>';
+      els.productsBody.appendChild(tr);
+    });
+  }
+
+  els.rawText.addEventListener('input', updatePreview);
+
+  els.btnCopyHtml.addEventListener('click', function(){
+    var raw = els.rawText.value.trim();
+    if(!raw){ showToast('Önce metin yapıştırın'); return; }
+    copyToClipboard(currentHtml());
+  });
+
+  els.btnAdd.addEventListener('click', function(){
+    var raw = els.rawText.value.trim();
+    if(!raw){ showToast('Önce metin yapıştırın'); return; }
+    var kod = els.urunKodu.value.trim();
+    products.push({ kod: kod, html: currentHtml() });
+    saveProducts();
+    renderProductsTable();
+    showToast('Listeye eklendi ('+products.length+' ürün)');
+    els.urunKodu.value = '';
+    els.rawText.value = '';
+    updatePreview();
+    els.urunKodu.focus();
+  });
+
+  els.btnClearForm.addEventListener('click', function(){
+    els.urunKodu.value = '';
+    els.rawText.value = '';
+    updatePreview();
+  });
+
+  els.productsBody.addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if(!btn) return;
+    var idx = parseInt(btn.getAttribute('data-idx'), 10);
+    var action = btn.getAttribute('data-action');
+    if(action === 'copy'){
+      copyToClipboard(products[idx].html);
+    } else if(action === 'delete'){
+      products.splice(idx,1);
+      saveProducts();
+      renderProductsTable();
+    }
+  });
+
+  els.btnClearAll.addEventListener('click', function(){
+    if(products.length === 0) return;
+    if(!confirm('Listedeki '+products.length+' ürünü silmek istediğinize emin misiniz?')) return;
+    products = [];
+    saveProducts();
+    renderProductsTable();
+  });
+
+  els.btnExportExcel.addEventListener('click', function(){
+    if(products.length === 0){ showToast('Listede ürün yok'); return; }
+    if(typeof XLSX === 'undefined'){ showToast('Excel kütüphanesi yüklenemedi (internet gerekli)'); return; }
+    var rows = products.map(function(p){
+      return { 'Ürün Kodu': p.kod, 'Açıklama (HTML)': p.html };
+    });
+    var ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{wch:20},{wch:100}];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Açıklamalar');
+    var stamp = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, 'urun-aciklamalari-'+stamp+'.xlsx');
+  });
+
+  loadProducts();
+  renderProductsTable();
+  updatePreview();
+})();
+</script>
+</body>
+</html>
