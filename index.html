@@ -236,25 +236,32 @@ Soru metni burada biter mi?
     return String(str).replace(/İ/g,'i').replace(/I/g,'ı').toLowerCase();
   }
 
-  var HEADER_PATTERNS = [
-    /kullanıcı avantajları/,
-    /teknik özellikler/,
-    /paket içeriği/,
-    /nerelerde kullanılır/,
-    /sıkça sorulan sorular/,
-    /^sss$/
+  // Fixed-phrase headers must match the WHOLE line (minus trailing : or ?),
+  // not just appear somewhere inside it — otherwise an ordinary sentence
+  // that happens to mention e.g. "paket içeriğinde" gets mistaken for the
+  // "Paket İçeriği" section header and corrupts the whole parse.
+  var FIXED_HEADERS = [
+    'kullanıcı avantajları',
+    'teknik özellikler',
+    'paket içeriği',
+    'sıkça sorulan sorular',
+    'sıkça sorulan sorular (sss)',
+    'sss'
   ];
 
   function isHeaderLine(line){
-    var l = trLower(line);
-    return HEADER_PATTERNS.some(function(re){ return re.test(l); });
+    var l = trLower(line).trim().replace(/[:?]+$/,'');
+    if(FIXED_HEADERS.indexOf(l) !== -1) return true;
+    // The "... Nerelerde Kullanılır?" header varies by product name, so it
+    // can only be anchored at the END of the line, not matched as a whole.
+    return /nerelerde kullanılır\??$/.test(trLower(line).trim());
   }
   function isFaqHeader(line){
-    var l = trLower(line);
-    return /sıkça sorulan sorular/.test(l) || /^sss$/.test(l.trim());
+    var l = trLower(line).trim().replace(/[:?]+$/,'');
+    return l === 'sıkça sorulan sorular' || l === 'sıkça sorulan sorular (sss)' || l === 'sss';
   }
   function isTechHeader(title){
-    return /teknik özellikler/.test(trLower(title));
+    return trLower(title).trim() === 'teknik özellikler';
   }
 
   function escapeHtml(str){
@@ -282,48 +289,61 @@ Soru metni burada biter mi?
     var current = null;
     var intro = [];
     var outro = [];
+    var prevBlank = true;
 
     for(var i=0;i<lines.length;i++){
       var line = lines[i].replace(/\s+$/,'');
       var trimmed = line.trim();
-      if(trimmed === '') continue;
+      if(trimmed === ''){ prevBlank = true; continue; }
 
       var bulletMatch = line.match(/^(\s*)[\*\-]\s+(.*)$/);
+      var content = bulletMatch ? bulletMatch[2] : trimmed;
 
       if(!bulletMatch && isHeaderLine(trimmed)){
         if(current) sections.push(current);
         current = { title: trimmed, isFaq: isFaqHeader(trimmed), items: [] };
+        prevBlank = false;
         continue;
       }
 
       if(current === null){
-        intro.push(bulletMatch ? bulletMatch[2] : trimmed);
+        intro.push(content);
+        prevBlank = false;
         continue;
       }
 
       if(current.isFaq){
-        if(bulletMatch){
-          var answerText = bulletMatch[2];
-          var last = current.items[current.items.length-1];
-          if(last){ last.answer = (last.answer ? last.answer+' ' : '') + answerText; }
-          else { current.items.push({question:'', answer:answerText}); }
-        } else if(trimmed.slice(-1) === '?'){
-          current.items.push({question: trimmed, answer:''});
-        } else {
+        // FAQ lines vary: "Soru?" on its own line followed by an indented
+        // "* Cevap" line, OR "Soru? Cevap" combined on a single (bulleted
+        // or bare) line. Splitting on the first "?" in the line's content
+        // handles both — a line with no "?" is either a continuation of
+        // the previous answer, or (after a blank line) the start of
+        // trailing, un-headed closing text.
+        var qIdx = content.indexOf('?');
+        if(qIdx !== -1){
+          var question = content.slice(0, qIdx+1).trim();
+          var answerStart = content.slice(qIdx+1).trim();
+          current.items.push({ question: question, answer: answerStart });
+        } else if(prevBlank || current.items.length === 0){
           sections.push(current);
           current = null;
           outro.push(trimmed);
+        } else {
+          var last = current.items[current.items.length-1];
+          last.answer = (last.answer ? last.answer+' ' : '') + content;
         }
+        prevBlank = false;
         continue;
       }
 
       if(bulletMatch){
-        current.items.push({text: bulletMatch[2]});
+        current.items.push({text: content});
       } else {
         sections.push(current);
         current = null;
         outro.push(trimmed);
       }
+      prevBlank = false;
     }
     if(current) sections.push(current);
 
