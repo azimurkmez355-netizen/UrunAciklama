@@ -145,20 +145,25 @@
       <input type="text" id="urunKodu" placeholder="0611265100">
 
       <label for="rawText">AI Çıktısı</label>
-      <textarea id="rawText" rows="17" placeholder="Kullanıcı Avantajları
+      <textarea id="rawText" rows="17" placeholder="Ürün Adı: Kısa Slogan
+Ürünü tanıtan giriş paragrafı burada yer alır.
 
-* 1500 Watt motor ve 12,5 Jul tekil darbe enerjisi ile en sert betonlarda...
-* ...
+Neden Bu Ürünü Tercih Etmelisiniz?
+Etiket: Maddenin açıklaması buraya yazılır, cümle şeklinde.
 
-Teknik Özellikler
+İkinci Etiket: İkinci maddenin açıklaması, boş satırla ayrılmış.
 
-* Giriş gücü: 1.500 W
-* ...
+Seriye Ait Ürün Kodları
+0611265101, 0611265102, 0611265103
 
-Sıkça Sorulan Sorular (SSS)
+Profesyonel Kullanım Alanları
+Kullanım Alanı: Bu alanda nasıl kullanılacağının açıklaması.
 
-Soru metni burada biter mi?
-   * Cevap metni burada başlar."></textarea>
+Teknik Genel Bakış
+Özellik: Değer
+
+Marka.com Avantajı:
+Kapanış / çağrı metni burada yer alır."></textarea>
 
       <div class="actions">
         <button class="primary" id="btnCopyHtml">
@@ -175,9 +180,9 @@ Soru metni burada biter mi?
       <details>
         <summary>Format nasıl olmalı?</summary>
         <ul>
-          <li>Her bölüm başlığı ("Kullanıcı Avantajları", "Teknik Özellikler", "Paket İçeriği", "... Nerelerde Kullanılır?", "Sıkça Sorulan Sorular (SSS)") kendi satırında, altında boş satır olsun.</li>
-          <li>Madde satırları <code>*</code> veya <code>-</code> ile başlamalı.</li>
-          <li>Teknik Özellikler'de <code>Etiket: Değer</code> biçimindeki satırlarda etiket otomatik kalın yapılır.</li>
+          <li>Her bölüm başlığı ("Neden ... Tercih Etmelisiniz?", "Seriye Ait Ürün Kodları", "Profesyonel Kullanım Alanları", "Teknik Genel Bakış", "...com Avantajı:", ayrıca eski format için "Kullanıcı Avantajları", "Teknik Özellikler", "Paket İçeriği", "... Nerelerde Kullanılır?", "Sıkça Sorulan Sorular (SSS)") kendi satırında olmalı.</li>
+          <li>Madde satırları <code>*</code>/<code>-</code> ile başlayabilir; başlamıyorsa her madde bir <b>boş satırla</b> ayrılmalı (AI çıktısı genelde böyle gelir, madde işareti şart değil).</li>
+          <li><code>Etiket: Açıklama</code> biçimindeki maddelerde etiket otomatik kalın yapılır.</li>
           <li>Kalın gösterilmesini istediğiniz herhangi bir ifadeyi <code>**bu şekilde**</code> çift yıldızla işaretleyin.</li>
           <li>SSS bölümünde soru satırı <code>?</code> ile bitmeli, cevap satırı ise başında boşluk + <code>*</code> ile girintili olmalı.</li>
         </ul>
@@ -197,7 +202,15 @@ Soru metni burada biter mi?
     <p class="eyebrow"><span class="step-num">3</span> Liste &amp; Dışa Aktarım</p>
     <div class="products-head">
       <span class="products-count" id="productsCount">0 ürün listede</span>
+      <div class="row-actions">
+        <button id="btnImportExcel">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 11V2m0 0L4.5 5.5M8 2l3.5 3.5M3 12v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Excel'den Toplu İçe Aktar
+        </button>
+        <input type="file" id="fileImportExcel" accept=".xlsx,.xls" hidden>
+      </div>
     </div>
+    <p class="empty-hint" style="margin:2px 0 0;">Sayfalarında "STOK KODU"/"ÜRÜN KODU" + "AÇIKLAMA" sütunu olan bir Excel dosyası yükleyin; uygun sayfalardaki tüm satırlar otomatik dönüştürülüp listeye eklenir.</p>
     <p class="empty-state" id="productsHint">Henüz eklenen ürün yok. Soldaki formdan "Listeye Ekle" ile başlayın.</p>
     <div class="table-wrap">
       <table id="productsTable" style="display:none">
@@ -246,22 +259,44 @@ Soru metni burada biter mi?
     'paket içeriği',
     'sıkça sorulan sorular',
     'sıkça sorulan sorular (sss)',
-    'sss'
+    'sss',
+    'seriye ait ürün kodları',
+    'profesyonel kullanım alanları',
+    'teknik genel bakış'
   ];
 
   function isHeaderLine(line){
     var l = trLower(line).trim().replace(/[:?]+$/,'');
     if(FIXED_HEADERS.indexOf(l) !== -1) return true;
-    // The "... Nerelerde Kullanılır?" header varies by product name, so it
-    // can only be anchored at the END of the line, not matched as a whole.
-    return /nerelerde kullanılır\??$/.test(trLower(line).trim());
+    var t = trLower(line).trim();
+    // These headers vary by product name, so they can only be anchored at
+    // the start/end of the line, not matched as a fixed whole phrase.
+    if(/nerelerde kullanılır\??$/.test(t)) return true;
+    if(/^neden\s+.+\s+tercih etmelisiniz\??$/.test(t)) return true;
+    if(/\.com\s+avantajı:?$/.test(t)) return true;
+    // Real AI output also drifts in wording beyond the patterns above
+    // ("Teknik Genel Bakış ve Uyumluluk", "Ürün Kodları (SKU) Listesi", ...),
+    // so fall back to a general "reads like a title, not a sentence" check:
+    // short, and not an "Etiket: Açıklama." content line (those carry a
+    // colon followed by more text, or end in a sentence-closing . / !).
+    return looksLikeHeaderText(line.trim());
+  }
+  function looksLikeHeaderText(t){
+    if(!t || t.length > 100) return false;
+    if(/[.!]$/.test(t)) return false;
+    if(/^[\d\s,.\-]+$/.test(t)) return false; // a bare code/number list, not a title
+    var colonIdx = t.indexOf(':');
+    if(colonIdx !== -1 && colonIdx < t.length - 1) return false;
+    return true;
   }
   function isFaqHeader(line){
     var l = trLower(line).trim().replace(/[:?]+$/,'');
     return l === 'sıkça sorulan sorular' || l === 'sıkça sorulan sorular (sss)' || l === 'sss';
   }
-  function isTechHeader(title){
-    return trLower(title).trim() === 'teknik özellikler';
+  function isPlainHeader(line){
+    // A closing marketing line (e.g. "Ustapazar.com Avantajı:") reads as
+    // running text, not a bullet list, so it renders as a plain paragraph.
+    return /\.com\s+avantajı:?$/.test(trLower(line).trim());
   }
 
   function escapeHtml(str){
@@ -276,7 +311,7 @@ Soru metni burada biter mi?
     }).join('');
   }
 
-  function formatTechLine(text){
+  function formatListItem(text){
     if(/\*\*/.test(text)) return formatInline(text);
     var m = text.match(/^([^:]{2,60}):\s*(.+)$/);
     if(m) return '<b>'+escapeHtml(m[1])+':</b> '+formatInline(m[2]);
@@ -301,7 +336,7 @@ Soru metni burada biter mi?
 
       if(!bulletMatch && isHeaderLine(trimmed)){
         if(current) sections.push(current);
-        current = { title: trimmed, isFaq: isFaqHeader(trimmed), items: [] };
+        current = { title: trimmed, isFaq: isFaqHeader(trimmed), plain: isPlainHeader(trimmed), items: [] };
         prevBlank = false;
         continue;
       }
@@ -342,12 +377,15 @@ Soru metni burada biter mi?
         continue;
       }
 
-      if(bulletMatch){
+      // Real AI output rarely bullets every paragraph — items are usually
+      // separated by a blank line instead. So a bare line starts a new item
+      // whenever the section has none yet or the previous line was blank;
+      // otherwise it's a wrapped continuation of the current item's text.
+      if(bulletMatch || current.items.length === 0 || prevBlank){
         current.items.push({text: content});
       } else {
-        sections.push(current);
-        current = null;
-        outro.push(trimmed);
+        var lastItem = current.items[current.items.length-1];
+        lastItem.text = (lastItem.text ? lastItem.text+' ' : '') + content;
       }
       prevBlank = false;
     }
@@ -367,12 +405,14 @@ Soru metni burada biter mi?
           html += '<p><b>'+formatInline(it.question)+'</b></p>\n';
           html += '<p>'+formatInline(it.answer)+'</p>\n';
         });
+      } else if(sec.plain){
+        sec.items.forEach(function(it){
+          html += '<p>'+formatListItem(it.text)+'</p>\n';
+        });
       } else {
-        var tech = isTechHeader(sec.title);
         html += '<ul>\n';
         sec.items.forEach(function(it){
-          var content = tech ? formatTechLine(it.text) : formatInline(it.text);
-          html += '<li><p>'+content+'</p></li>\n';
+          html += '<li><p>'+formatListItem(it.text)+'</p></li>\n';
         });
         html += '</ul>\n';
       }
@@ -403,6 +443,8 @@ Soru metni burada biter mi?
     productsCount: document.getElementById('productsCount'),
     btnExportExcel: document.getElementById('btnExportExcel'),
     btnClearAll: document.getElementById('btnClearAll'),
+    btnImportExcel: document.getElementById('btnImportExcel'),
+    fileImportExcel: document.getElementById('fileImportExcel'),
     toast: document.getElementById('toast')
   };
 
@@ -549,6 +591,53 @@ Soru metni burada biter mi?
     products = [];
     saveProducts();
     renderProductsTable();
+  });
+
+  els.btnImportExcel.addEventListener('click', function(){ els.fileImportExcel.click(); });
+
+  els.fileImportExcel.addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if(!file) return;
+    if(typeof XLSX === 'undefined'){ showToast('Excel kütüphanesi yüklenemedi (internet gerekli)'); els.fileImportExcel.value=''; return; }
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var wb = XLSX.read(ev.target.result, {type:'array'});
+        var added = 0, sheetsUsed = 0;
+        wb.SheetNames.forEach(function(sheetName){
+          var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {header:1, defval:null});
+          if(!rows.length) return;
+          var header = rows[0].map(function(h){ return trLower(String(h||'')).trim(); });
+          var kodIdx = header.findIndex(function(h){ return /^(stok|ürün)\s*kodu\s*$/.test(h); });
+          var descIdx = header.findIndex(function(h){ return h.indexOf('açıklama') === 0; });
+          if(kodIdx === -1 || descIdx === -1) return;
+          var sheetAdded = 0;
+          for(var r=1; r<rows.length; r++){
+            var row = rows[r];
+            if(!row) continue;
+            var kod = row[kodIdx];
+            var desc = row[descIdx];
+            if(desc === null || desc === undefined || String(desc).trim() === '') continue;
+            var parsed = parseDescription(String(desc));
+            if(parsed.sections.length === 0) continue;
+            products.push({ kod: (kod === null || kod === undefined) ? '' : String(kod), html: renderHtml(parsed) });
+            sheetAdded++;
+          }
+          if(sheetAdded > 0){ added += sheetAdded; sheetsUsed++; }
+        });
+        if(added === 0){
+          showToast('Uygun sütun bulunamadı ("STOK/ÜRÜN KODU" + "AÇIKLAMA")');
+        } else {
+          saveProducts();
+          renderProductsTable();
+          showToast(sheetsUsed+' sayfadan '+added+' ürün eklendi');
+        }
+      }catch(err){
+        showToast('Excel okunamadı: '+err.message);
+      }
+      els.fileImportExcel.value = '';
+    };
+    reader.readAsArrayBuffer(file);
   });
 
   els.btnExportExcel.addEventListener('click', function(){
